@@ -32,19 +32,24 @@ const upload = multer({
 });
 // Global middlewares
 const allowedOrigins = [
-  "http://localhost:5173", // Vite frontend (local)
-  "https://your-vercel-site.vercel.app" // replace with your actual Vercel frontend URL
+  "http://localhost:5173", // your dev frontend
+  "https://househunt-frontend-six.vercel.app/", // replace with deployed frontend URL
 ];
 
+// CORS configuration
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl)
+      // allow requests with no origin (like Postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg =
+          "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
     },
-    credentials: true,
+    credentials: true, // enable cookies/auth if needed
   })
 );
 
@@ -83,13 +88,3 @@ mongoose
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
