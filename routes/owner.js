@@ -1,4 +1,3 @@
-// backend/routes/owner.js
 import express from "express";
 import fs from "fs";
 import path from "path";
@@ -70,10 +69,15 @@ function handleError(res, err, msg = "Server error") {
 }
 
 /* ──────────────────────────────────────────
+   small helper to read correct ownerId
+────────────────────────────────────────── */
+const getOwnerId = (req) => req.user?.userId || req.user?.id;
+
+/* ──────────────────────────────────────────
    CRUD: Properties
 ────────────────────────────────────────── */
 router.get("/properties", requireAuth, isOwner, async (req, res) => {
-  const list = await Property.find({ ownerId: req.user.userId });
+  const list = await Property.find({ ownerId: getOwnerId(req) });
   res.json(list);
 });
 
@@ -90,7 +94,7 @@ router.post(
         req.body[key] !== undefined ? Number(req.body[key]) : undefined;
 
       const property = await Property.create({
-        ownerId: req.user.userId,
+        ownerId: getOwnerId(req),
         imageUrl,
         title: req.body.title,
         description: req.body.description,
@@ -130,7 +134,7 @@ router.patch(
       if (req.file) update.imageUrl = await processImage(req.file.path);
 
       const prop = await Property.findOneAndUpdate(
-        { _id: req.params.id, ownerId: req.user.userId },
+        { _id: req.params.id, ownerId: getOwnerId(req) },
         update,
         { new: true }
       );
@@ -143,16 +147,15 @@ router.patch(
 );
 
 router.delete("/properties/:id", requireAuth, isOwner, async (req, res) => {
-  await Property.deleteOne({ _id: req.params.id, ownerId: req.user.userId });
+  await Property.deleteOne({ _id: req.params.id, ownerId: getOwnerId(req) });
   res.sendStatus(204);
 });
 
 /* ──────────────────────────────────────────
    Incoming bookings
 ────────────────────────────────────────── */
-// in routes/owner.js
 router.get("/bookings", requireAuth, isOwner, async (req, res) => {
-  const bookings = await Booking.find({ ownerId: req.user.userId })
+  const bookings = await Booking.find({ ownerId: getOwnerId(req) })
     .sort({ createdAt: -1 })
     .populate("renter", "name email")
     .populate("property", "title"); // ← quick access to title
@@ -172,7 +175,7 @@ router.get("/bookings", requireAuth, isOwner, async (req, res) => {
 
 router.patch("/bookings/:id/status", requireAuth, isOwner, async (req, res) => {
   const booking = await Booking.findOneAndUpdate(
-    { _id: req.params.id, ownerId: req.user.userId },
+    { _id: req.params.id, ownerId: getOwnerId(req) },
     { status: req.body.status },
     { new: true }
   );
